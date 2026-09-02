@@ -20,126 +20,121 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Verificar estrutura do projeto
+      - name: Mostrar arquivos recebidos
         run: |
           echo "Diretório atual:"
           pwd
 
-          echo "Arquivos da raiz:"
-          ls -la
-
-          echo "Estrutura do projeto:"
+          echo "Arquivos existentes:"
           find . -maxdepth 3 -type f \
             -not -path "./.git/*" \
-            -not -path "./node_modules/*" \
             | sort
 
+      - name: Organizar estrutura do projeto
+        run: |
+          mkdir -p assets
+          mkdir -p src
+          mkdir -p style
+
+          if [ -f "icon.png" ]; then
+            cp icon.png assets/icon.png
+            echo "icon.png copiado para assets/icon.png"
+          fi
+
+          if [ -f "visual.ts" ]; then
+            cp visual.ts src/visual.ts
+            echo "visual.ts copiado para src/visual.ts"
+          fi
+
+          if [ -f "visual.less" ]; then
+            cp visual.less style/visual.less
+            echo "visual.less copiado para style/visual.less"
+          fi
+
+      - name: Verificar arquivos obrigatórios
+        run: |
           test -f package.json || {
-            echo "ERRO: package.json não encontrado na raiz."
+            echo "ERRO: package.json não encontrado."
             exit 1
           }
 
           test -f pbiviz.json || {
-            echo "ERRO: pbiviz.json não encontrado na raiz."
+            echo "ERRO: pbiviz.json não encontrado."
             exit 1
           }
 
           test -f capabilities.json || {
-            echo "ERRO: capabilities.json não encontrado na raiz."
+            echo "ERRO: capabilities.json não encontrado."
+            exit 1
+          }
+
+          test -f tsconfig.json || {
+            echo "ERRO: tsconfig.json não encontrado."
+            exit 1
+          }
+
+          test -f assets/icon.png || {
+            echo "ERRO: assets/icon.png não foi encontrado."
             exit 1
           }
 
           test -f src/visual.ts || {
-            echo "ERRO: src/visual.ts não encontrado."
+            echo "ERRO: src/visual.ts não foi encontrado."
             exit 1
           }
 
           test -f style/visual.less || {
-            echo "ERRO: style/visual.less não encontrado."
+            echo "ERRO: style/visual.less não foi encontrado."
             exit 1
           }
 
-      - name: Mostrar conteúdo do capabilities.json
-        run: |
-          echo "Conteúdo utilizado na compilação:"
-          cat capabilities.json
+          echo "Todos os arquivos obrigatórios foram encontrados."
 
       - name: Validar arquivos JSON
         run: |
-          node -e "
-            const fs = require('fs');
+          node <<'NODE'
+          const fs = require("fs");
 
-            const files = [
-              'package.json',
-              'pbiviz.json',
-              'capabilities.json',
-              'tsconfig.json'
-            ];
+          const files = [
+            "package.json",
+            "pbiviz.json",
+            "capabilities.json",
+            "tsconfig.json"
+          ];
 
-            for (const file of files) {
-              try {
-                JSON.parse(fs.readFileSync(file, 'utf8'));
-                console.log(file + ' válido');
-              } catch (error) {
-                console.error(file + ' inválido');
-                console.error(error.message);
-                process.exit(1);
-              }
+          let invalidFileFound = false;
+
+          for (const file of files) {
+            try {
+              JSON.parse(fs.readFileSync(file, "utf8"));
+              console.log("VALIDO: " + file);
+            } catch (error) {
+              invalidFileFound = true;
+              console.error("INVALIDO: " + file);
+              console.error(error.message);
             }
-          "
-
-      - name: Criar ícone obrigatório do visual
-        run: |
-          mkdir -p assets
-
-          echo "iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAK0lEQVR4nGP8z0A+YKJA76jmUc2jmkc1j2oe1TyqeVTzqOZRzaOaRzWPah4A4DMCKdR0AQQAAAAASUVORK5CYII=" \
-            | base64 --decode \
-            > assets/icon.png
-
-          test -s assets/icon.png || {
-            echo "ERRO: não foi possível criar assets/icon.png."
-            exit 1
           }
+
+          if (invalidFileFound) {
+            process.exit(1);
+          }
+          NODE
+
+      - name: Mostrar estrutura organizada
+        run: |
+          echo "Estrutura usada na compilação:"
+          find . -maxdepth 3 -type f \
+            -not -path "./.git/*" \
+            | sort
 
           echo "Informações do ícone:"
           file assets/icon.png
           ls -la assets/icon.png
 
-      - name: Verificar referência do ícone
-        run: |
-          node -e "
-            const fs = require('fs');
-
-            const configuration = JSON.parse(
-              fs.readFileSync('pbiviz.json', 'utf8')
-            );
-
-            const iconPath =
-              configuration.assets &&
-              configuration.assets.icon;
-
-            if (!iconPath) {
-              console.error(
-                'ERRO: assets.icon não está definido no pbiviz.json.'
-              );
-              process.exit(1);
-            }
-
-            if (!fs.existsSync(iconPath)) {
-              console.error(
-                'ERRO: o ícone indicado no pbiviz.json não existe: ' +
-                iconPath
-              );
-              process.exit(1);
-            }
-
-            console.log('Ícone encontrado: ' + iconPath);
-          "
-
       - name: Instalar dependências
         run: npm install
 
-      - name: Exibir versões utilizadas
+      - name: Mostrar versões
         run: |
           node --version
           npm --version
@@ -150,7 +145,7 @@ jobs:
 
       - name: Verificar pacote gerado
         run: |
-          echo "Arquivos da pasta dist:"
+          echo "Conteúdo da pasta dist:"
           ls -la dist
 
           PBIVIZ_FILE="$(find dist -maxdepth 1 -type f -name '*.pbiviz' -print -quit)"
@@ -160,7 +155,7 @@ jobs:
             exit 1
           fi
 
-          echo "Pacote encontrado:"
+          echo "Pacote PBIVIZ gerado:"
           echo "$PBIVIZ_FILE"
 
       - name: Disponibilizar arquivo compilado
