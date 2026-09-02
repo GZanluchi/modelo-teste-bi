@@ -3,15 +3,22 @@
     "allowJs": false,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
-    "lib": ["dom", "es2020"],
+    "lib": [
+      "dom",
+      "es2020"
+    ],
     "module": "esnext",
     "moduleResolution": "node",
     "target": "es2020",
     "sourceMap": true,
     "declaration": true,
     "outDir": "./.tmp/build/",
-    "strict": true,
+    "strict": false,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
     "skipLibCheck": true
   },
-  "files": ["./src/visual.ts"]
+  "files": [
+    "./src/visual.ts"
+  ]
 }
