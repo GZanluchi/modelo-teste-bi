@@ -1,52 +1,147 @@
-name: Compilar IFC Viewer para Power BI
-
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-
-jobs:
-  build:
-    name: Gerar arquivo PBIVIZ
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Obter código-fonte
-        uses: actions/checkout@v4
-
-      - name: Preparar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Verificar estrutura do projeto
-        run: |
-          echo "Arquivos encontrados na raiz:"
-          ls -la
-          test -f package.json || {
-            echo "ERRO: package.json não encontrado na raiz do repositório."
-            exit 1
+{
+  "dataRoles": [
+    {
+      "displayName": "URL do arquivo IFC",
+      "name": "ifcUrl",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "ID do elemento IFC (Express ID ou GlobalId)",
+      "name": "elementId",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Valor para cor",
+      "name": "colorValue",
+      "kind": "Measure"
+    },
+    {
+      "displayName": "Tooltip",
+      "name": "tooltip",
+      "kind": "Grouping"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "categorical": {
+        "categories": {
+          "select": [
+            {
+              "for": {
+                "in": "ifcUrl"
+              }
+            },
+            {
+              "for": {
+                "in": "elementId"
+              }
+            },
+            {
+              "for": {
+                "in": "tooltip"
+              }
+            }
+          ],
+          "dataReductionAlgorithm": {
+            "top": {
+              "count": 30000
+            }
           }
-
-      - name: Instalar dependências do projeto
-        run: npm install
-
-      - name: Verificar versão do PBIVIZ
-        run: npx pbiviz --version
-
-      - name: Gerar pacote PBIVIZ
-        run: npx pbiviz package
-
-      - name: Listar resultado
-        run: |
-          echo "Conteúdo da pasta dist:"
-          ls -la dist
-
-      - name: Disponibilizar arquivo compilado
-        uses: actions/upload-artifact@v4
-        with:
-          name: IFC-Viewer-PowerBI
-          path: dist/*.pbiviz
-          if-no-files-found: error
-          retention-days: 30
+        },
+        "values": {
+          "select": [
+            {
+              "bind": {
+                "to": "colorValue"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "objects": {
+    "model": {
+      "displayName": "Modelo IFC",
+      "properties": {
+        "defaultUrl": {
+          "displayName": "URL padrão do IFC",
+          "type": {
+            "text": true
+          }
+        },
+        "wasmPath": {
+          "displayName": "Caminho do web-ifc.wasm",
+          "type": {
+            "text": true
+          }
+        },
+        "allowUpload": {
+          "displayName": "Permitir upload local",
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "appearance": {
+      "displayName": "Aparência",
+      "properties": {
+        "backgroundColor": {
+          "displayName": "Fundo",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "modelColor": {
+          "displayName": "Cor padrão do modelo",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "selectionColor": {
+          "displayName": "Cor da seleção",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "showGrid": {
+          "displayName": "Mostrar grade",
+          "type": {
+            "bool": true
+          }
+        },
+        "showToolbar": {
+          "displayName": "Mostrar barra de ferramentas",
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    }
+  },
+  "privileges": [
+    {
+      "name": "WebAccess",
+      "essential": true,
+      "parameters": [
+        "https://*",
+        "http://localhost:*"
+      ]
+    }
+  ],
+  "supportsHighlight": true,
+  "supportsLandingPage": true
+}
