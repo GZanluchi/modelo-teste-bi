@@ -1,0 +1,21 @@
+{
+  "name": "ifc-viewer-powerbi-visual",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "pbiviz start",
+    "package": "pbiviz package",
+    "lint": "eslint . --ext .ts"
+  },
+  "dependencies": {
+    "@types/three": "^0.149.0",
+    "powerbi-visuals-api": "^5.11.1",
+    "three": "0.149.0",
+    "web-ifc": "0.0.57",
+    "web-ifc-three": "0.0.126"
+  },
+  "devDependencies": {
+    "powerbi-visuals-tools": "^6.1.0",
+    "typescript": "^5.5.4"
+  }
+}

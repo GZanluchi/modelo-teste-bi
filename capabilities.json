@@ -1,0 +1,50 @@
+{
+  "dataRoles": [
+    { "displayName": "URL do arquivo IFC", "name": "ifcUrl", "kind": "Grouping" },
+    { "displayName": "ID do elemento IFC (Express ID ou GlobalId)", "name": "elementId", "kind": "Grouping" },
+    { "displayName": "Valor para cor", "name": "colorValue", "kind": "Measure" },
+    { "displayName": "Tooltip", "name": "tooltip", "kind": "Grouping" }
+  ],
+  "dataViewMappings": [
+    {
+      "categorical": {
+        "categories": {
+          "select": [
+            { "for": { "in": "ifcUrl" } },
+            { "for": { "in": "elementId" } },
+            { "for": { "in": "tooltip" } }
+          ],
+          "dataReductionAlgorithm": { "top": { "count": 30000 } }
+        },
+        "values": {
+          "select": [ { "bind": { "to": "colorValue" } ]
+        }
+      }
+    }
+  ],
+  "objects": {
+    "model": {
+      "displayName": "Modelo IFC",
+      "properties": {
+        "defaultUrl": { "displayName": "URL padrão do IFC", "type": { "text": true } },
+        "wasmPath": { "displayName": "Caminho do web-ifc.wasm", "type": { "text": true } },
+        "allowUpload": { "displayName": "Permitir upload local", "type": { "bool": true } }
+      }
+    },
+    "appearance": {
+      "displayName": "Aparência",
+      "properties": {
+        "backgroundColor": { "displayName": "Fundo", "type": { "fill": { "solid": { "color": true } } } },
+        "modelColor": { "displayName": "Cor padrão", "type": { "fill": { "solid": { "color": true } } } },
+        "selectionColor": { "displayName": "Cor da seleção", "type": { "fill": { "solid": { "color": true } } },
+        "showGrid": { "displayName": "Mostrar grade", "type": { "bool": true } },
+        "showToolbar": { "displayName": "Mostrar barra de ferramentas", "type": { "bool": true } }
+      }
+    }
+  },
+  "privileges": [
+    { "name": "WebAccess", "essential": true, "parameters": ["https://*", "http://localhost:*" ] }
+  ],
+  "supportsHighlight": true,
+  "supportsLandingPage": true
+}
