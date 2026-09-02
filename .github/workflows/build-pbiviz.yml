@@ -8,26 +8,40 @@ on:
 
 jobs:
   build:
+    name: Gerar arquivo PBIVIZ
     runs-on: ubuntu-latest
 
     steps:
       - name: Obter código-fonte
         uses: actions/checkout@v4
 
-      - name: Preparar Node.js no servidor do GitHub
+      - name: Preparar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: "22"
 
-      - name: Instalar dependências
+      - name: Verificar estrutura do projeto
+        run: |
+          echo "Arquivos encontrados na raiz:"
+          ls -la
+          test -f package.json || {
+            echo "ERRO: package.json não encontrado na raiz do repositório."
+            exit 1
+          }
+
+      - name: Instalar dependências do projeto
         run: npm install
 
-      - name: Instalar ferramentas de visuais Power BI
-        run: npm install --global powerbi-visuals-tools@latest
+      - name: Verificar versão do PBIVIZ
+        run: npx pbiviz --version
 
       - name: Gerar pacote PBIVIZ
-        run: pbiviz package
+        run: npx pbiviz package
+
+      - name: Listar resultado
+        run: |
+          echo "Conteúdo da pasta dist:"
+          ls -la dist
 
       - name: Disponibilizar arquivo compilado
         uses: actions/upload-artifact@v4
@@ -35,3 +49,5 @@ jobs:
           name: IFC-Viewer-PowerBI
           path: dist/*.pbiviz
           if-no-files-found: error
+          retention-days: 30
+``
