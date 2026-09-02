@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Gerar arquivo PBIVIZ
+    name: Gerar pacote PBIVIZ
     runs-on: ubuntu-latest
 
     steps:
@@ -22,8 +22,17 @@ jobs:
 
       - name: Verificar estrutura do projeto
         run: |
-          echo "Arquivos encontrados na raiz:"
+          echo "Diretório atual:"
+          pwd
+
+          echo "Arquivos da raiz:"
           ls -la
+
+          echo "Estrutura do projeto:"
+          find . -maxdepth 3 -type f \
+            -not -path "./.git/*" \
+            -not -path "./node_modules/*" \
+            | sort
 
           test -f package.json || {
             echo "ERRO: package.json não encontrado na raiz."
@@ -40,30 +49,119 @@ jobs:
             exit 1
           }
 
+          test -f src/visual.ts || {
+            echo "ERRO: src/visual.ts não encontrado."
+            exit 1
+          }
+
+          test -f style/visual.less || {
+            echo "ERRO: style/visual.less não encontrado."
+            exit 1
+          }
+
+      - name: Mostrar conteúdo do capabilities.json
+        run: |
+          echo "Conteúdo utilizado na compilação:"
+          cat capabilities.json
+
       - name: Validar arquivos JSON
         run: |
-          node -e "JSON.parse(require('fs').readFileSync('package.json', 'utf8')); console.log('package.json válido')"
-          node -e "JSON.parse(require('fs').readFileSync('pbiviz.json', 'utf8')); console.log('pbiviz.json válido')"
-          node -e "JSON.parse(require('fs').readFileSync('capabilities.json', 'utf8')); console.log('capabilities.json válido')"
+          node -e "
+            const fs = require('fs');
+
+            const files = [
+              'package.json',
+              'pbiviz.json',
+              'capabilities.json',
+              'tsconfig.json'
+            ];
+
+            for (const file of files) {
+              try {
+                JSON.parse(fs.readFileSync(file, 'utf8'));
+                console.log(file + ' válido');
+              } catch (error) {
+                console.error(file + ' inválido');
+                console.error(error.message);
+                process.exit(1);
+              }
+            }
+          "
+
+      - name: Criar ícone obrigatório do visual
+        run: |
+          mkdir -p assets
+
+          echo "iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAK0lEQVR4nGP8z0A+YKJA76jmUc2jmkc1j2oe1TyqeVTzqOZRzaOaRzWPah4A4DMCKdR0AQQAAAAASUVORK5CYII=" \
+            | base64 --decode \
+            > assets/icon.png
+
+          test -s assets/icon.png || {
+            echo "ERRO: não foi possível criar assets/icon.png."
+            exit 1
+          }
+
+          echo "Informações do ícone:"
+          file assets/icon.png
+          ls -la assets/icon.png
+
+      - name: Verificar referência do ícone
+        run: |
+          node -e "
+            const fs = require('fs');
+
+            const configuration = JSON.parse(
+              fs.readFileSync('pbiviz.json', 'utf8')
+            );
+
+            const iconPath =
+              configuration.assets &&
+              configuration.assets.icon;
+
+            if (!iconPath) {
+              console.error(
+                'ERRO: assets.icon não está definido no pbiviz.json.'
+              );
+              process.exit(1);
+            }
+
+            if (!fs.existsSync(iconPath)) {
+              console.error(
+                'ERRO: o ícone indicado no pbiviz.json não existe: ' +
+                iconPath
+              );
+              process.exit(1);
+            }
+
+            console.log('Ícone encontrado: ' + iconPath);
+          "
 
       - name: Instalar dependências
         run: npm install
 
-      - name: Exibir versão do PBIVIZ
-        run: npx pbiviz --version
+      - name: Exibir versões utilizadas
+        run: |
+          node --version
+          npm --version
+          npx pbiviz --version
 
       - name: Gerar pacote PBIVIZ
         run: npx pbiviz package
 
       - name: Verificar pacote gerado
         run: |
-          echo "Arquivos gerados na pasta dist:"
+          echo "Arquivos da pasta dist:"
           ls -la dist
 
-          test -n "$(find dist -maxdepth 1 -name '*.pbiviz' -print -quit)" || {
-            echo "ERRO: nenhum arquivo PBIVIZ foi gerado."
+          PBIVIZ_FILE="$(find dist -maxdepth 1 -type f -name '*.pbiviz' -print -quit)"
+
+          if [ -z "$PBIVIZ_FILE" ]; then
+            echo "ERRO: nenhum arquivo .pbiviz foi gerado."
             exit 1
-          }
+          fi
+
+          echo "Pacote encontrado:"
+          echo "$PBIVIZ_FILE"
 
       - name: Disponibilizar arquivo compilado
         uses: actions/upload-artifact@v4
