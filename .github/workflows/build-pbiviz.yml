@@ -1,147 +1,74 @@
-{
-  "dataRoles": [
-    {
-      "displayName": "URL do arquivo IFC",
-      "name": "ifcUrl",
-      "kind": "Grouping"
-    },
-    {
-      "displayName": "ID do elemento IFC (Express ID ou GlobalId)",
-      "name": "elementId",
-      "kind": "Grouping"
-    },
-    {
-      "displayName": "Valor para cor",
-      "name": "colorValue",
-      "kind": "Measure"
-    },
-    {
-      "displayName": "Tooltip",
-      "name": "tooltip",
-      "kind": "Grouping"
-    }
-  ],
-  "dataViewMappings": [
-    {
-      "categorical": {
-        "categories": {
-          "select": [
-            {
-              "for": {
-                "in": "ifcUrl"
-              }
-            },
-            {
-              "for": {
-                "in": "elementId"
-              }
-            },
-            {
-              "for": {
-                "in": "tooltip"
-              }
-            }
-          ],
-          "dataReductionAlgorithm": {
-            "top": {
-              "count": 30000
-            }
+name: Compilar IFC Viewer para Power BI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Gerar arquivo PBIVIZ
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Obter código-fonte
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verificar estrutura do projeto
+        run: |
+          echo "Arquivos encontrados na raiz:"
+          ls -la
+
+          test -f package.json || {
+            echo "ERRO: package.json não encontrado na raiz."
+            exit 1
           }
-        },
-        "values": {
-          "select": [
-            {
-              "bind": {
-                "to": "colorValue"
-              }
-            }
-          ]
-        }
-      }
-    }
-  ],
-  "objects": {
-    "model": {
-      "displayName": "Modelo IFC",
-      "properties": {
-        "defaultUrl": {
-          "displayName": "URL padrão do IFC",
-          "type": {
-            "text": true
+
+          test -f pbiviz.json || {
+            echo "ERRO: pbiviz.json não encontrado na raiz."
+            exit 1
           }
-        },
-        "wasmPath": {
-          "displayName": "Caminho do web-ifc.wasm",
-          "type": {
-            "text": true
+
+          test -f capabilities.json || {
+            echo "ERRO: capabilities.json não encontrado na raiz."
+            exit 1
           }
-        },
-        "allowUpload": {
-          "displayName": "Permitir upload local",
-          "type": {
-            "bool": true
+
+      - name: Validar arquivos JSON
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('package.json', 'utf8')); console.log('package.json válido')"
+          node -e "JSON.parse(require('fs').readFileSync('pbiviz.json', 'utf8')); console.log('pbiviz.json válido')"
+          node -e "JSON.parse(require('fs').readFileSync('capabilities.json', 'utf8')); console.log('capabilities.json válido')"
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Exibir versão do PBIVIZ
+        run: npx pbiviz --version
+
+      - name: Gerar pacote PBIVIZ
+        run: npx pbiviz package
+
+      - name: Verificar pacote gerado
+        run: |
+          echo "Arquivos gerados na pasta dist:"
+          ls -la dist
+
+          test -n "$(find dist -maxdepth 1 -name '*.pbiviz' -print -quit)" || {
+            echo "ERRO: nenhum arquivo PBIVIZ foi gerado."
+            exit 1
           }
-        }
-      }
-    },
-    "appearance": {
-      "displayName": "Aparência",
-      "properties": {
-        "backgroundColor": {
-          "displayName": "Fundo",
-          "type": {
-            "fill": {
-              "solid": {
-                "color": true
-              }
-            }
-          }
-        },
-        "modelColor": {
-          "displayName": "Cor padrão do modelo",
-          "type": {
-            "fill": {
-              "solid": {
-                "color": true
-              }
-            }
-          }
-        },
-        "selectionColor": {
-          "displayName": "Cor da seleção",
-          "type": {
-            "fill": {
-              "solid": {
-                "color": true
-              }
-            }
-          }
-        },
-        "showGrid": {
-          "displayName": "Mostrar grade",
-          "type": {
-            "bool": true
-          }
-        },
-        "showToolbar": {
-          "displayName": "Mostrar barra de ferramentas",
-          "type": {
-            "bool": true
-          }
-        }
-      }
-    }
-  },
-  "privileges": [
-    {
-      "name": "WebAccess",
-      "essential": true,
-      "parameters": [
-        "https://*",
-        "http://localhost:*"
-      ]
-    }
-  ],
-  "supportsHighlight": true,
-  "supportsLandingPage": true
-}
+
+      - name: Disponibilizar arquivo compilado
+        uses: actions/upload-artifact@v4
+        with:
+          name: IFC-Viewer-PowerBI
+          path: dist/*.pbiviz
+          if-no-files-found: error
+          retention-days: 30
