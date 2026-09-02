@@ -74,17 +74,17 @@ jobs:
           }
 
           test -f assets/icon.png || {
-            echo "ERRO: assets/icon.png não foi encontrado."
+            echo "ERRO: assets/icon.png não encontrado."
             exit 1
           }
 
           test -f src/visual.ts || {
-            echo "ERRO: src/visual.ts não foi encontrado."
+            echo "ERRO: src/visual.ts não encontrado."
             exit 1
           }
 
           test -f style/visual.less || {
-            echo "ERRO: style/visual.less não foi encontrado."
+            echo "ERRO: style/visual.less não encontrado."
             exit 1
           }
 
@@ -102,34 +102,37 @@ jobs:
             "tsconfig.json"
           ];
 
-          let invalidFileFound = false;
+          let hasError = false;
 
           for (const file of files) {
             try {
               JSON.parse(fs.readFileSync(file, "utf8"));
               console.log("VALIDO: " + file);
             } catch (error) {
-              invalidFileFound = true;
+              hasError = true;
               console.error("INVALIDO: " + file);
               console.error(error.message);
             }
           }
 
-          if (invalidFileFound) {
+          if (hasError) {
             process.exit(1);
           }
           NODE
 
-      - name: Mostrar estrutura organizada
+      - name: Verificar correções do visual
         run: |
-          echo "Estrutura usada na compilação:"
-          find . -maxdepth 3 -type f \
-            -not -path "./.git/*" \
-            | sort
+          if grep -n "loadAsync" src/visual.ts; then
+            echo "ERRO: ainda existe loadAsync no visual.ts."
+            exit 1
+          fi
 
-          echo "Informações do ícone:"
-          file assets/icon.png
-          ls -la assets/icon.png
+          grep -n "loadIfcModel" src/visual.ts || {
+            echo "ERRO: método loadIfcModel não encontrado."
+            exit 1
+          }
+
+          echo "Código visual verificado."
 
       - name: Instalar dependências
         run: npm install
@@ -141,11 +144,17 @@ jobs:
           npx pbiviz --version
 
       - name: Gerar pacote PBIVIZ
-        run: npx pbiviz package
+        run: npx pbiviz package --fix --verbose
 
       - name: Verificar pacote gerado
         run: |
           echo "Conteúdo da pasta dist:"
+
+          if [ ! -d "dist" ]; then
+            echo "ERRO: a pasta dist não foi criada."
+            exit 1
+          fi
+
           ls -la dist
 
           PBIVIZ_FILE="$(find dist -maxdepth 1 -type f -name '*.pbiviz' -print -quit)"
@@ -155,7 +164,7 @@ jobs:
             exit 1
           fi
 
-          echo "Pacote PBIVIZ gerado:"
+          echo "Pacote encontrado:"
           echo "$PBIVIZ_FILE"
 
       - name: Disponibilizar arquivo compilado
