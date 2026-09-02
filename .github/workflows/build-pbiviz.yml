@@ -50,4 +50,3 @@ jobs:
           path: dist/*.pbiviz
           if-no-files-found: error
           retention-days: 30
-``
