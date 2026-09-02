@@ -6,7 +6,8 @@
       "kind": "Grouping"
     },
     {
-      "displayName": "ID do elemento IFC (Express ID ou GlobalId)",
+      "displayName": "ID do elemento IFC",
+      "description": "GlobalId ou Express ID do elemento IFC.",
       "name": "elementId",
       "kind": "Grouping"
     },
@@ -88,7 +89,7 @@
       "displayName": "Aparência",
       "properties": {
         "backgroundColor": {
-          "displayName": "Fundo",
+          "displayName": "Cor de fundo",
           "type": {
             "fill": {
               "solid": {
@@ -108,7 +109,7 @@
           }
         },
         "selectionColor": {
-          "displayName": "Cor da seleção",
+          "displayName": "Cor do elemento selecionado",
           "type": {
             "fill": {
               "solid": {
